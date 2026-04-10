@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pastel de cumpleaños</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poiret+One&family=Quicksand:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg1: #fff2f7;
+    --bg2: #ffe4ef;
+    --text: #6f2b58;
+    --accent: #ff73a8;
+    --accent2: #7ad8ff;
+    --line: #d85b91;
+    --success: #4caf7d;
+    --warning: #ffb347;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Quicksand", Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background: radial-gradient(circle at top, var(--bg1) 0%, var(--bg2) 70%, #ffd7e7 100%);
+    overflow: hidden;
+  }
+
+  .app {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    position: relative;
+  }
+
+  .text {
+    width: min(840px, 90vw);
+    margin: 26px auto 0;
+    font-size: clamp(18px, 2vw, 24px);
+    line-height: 1.55;
+    min-height: 108px;
+    text-align: center;
+    z-index: 2;
+    font-family: "Poiret One", "Quicksand", sans-serif;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255,255,255,.5);
+  }
+
+  .controls {
+    width: min(920px, 92vw);
+    margin: 8px auto 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    z-index: 3;
+    min-height: 52px;
+  }
+
+  .hint-pill,
+  .action-btn {
+    border-radius: 999px;
+    padding: 11px 16px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 22px rgba(147, 74, 108, 0.12);
+    border: 1px solid rgba(255,255,255,.65);
+  }
+
+  .hint-pill {
+    background: rgba(255,255,255,.72);
+    font-size: 14px;
+  }
+
+  .hint-pill { display: none; }
+  .hint-pill.show { display: inline-flex; }
+
+  .action-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #ff86b6, #ffb86c);
+    color: white;
+    font-weight: 700;
+    letter-spacing: .4px;
+    font-family: "Quicksand", Arial, sans-serif;
+    transition: transform .18s ease, box-shadow .18s ease, opacity .2s ease;
+  }
+
+  .action-btn:hover { transform: translateY(-1px); }
+  .action-btn:active { transform: translateY(1px) scale(.99); }
+  .action-btn[disabled] { opacity: .55; cursor: not-allowed; }
+
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 0;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+
+  .balloon-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 6;
+  }
+
+  .balloon-letter {
+    position: absolute;
+    left: 50%;
+    bottom: 14%;
+    transform: translateX(-50%) scale(.2);
+    min-width: clamp(34px, 7vw, 66px);
+    height: clamp(46px, 9vw, 82px);
+    padding: 0 10px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(22px, 4vw, 36px);
+    font-family: "Poiret One", "Quicksand", sans-serif;
+    box-shadow: 0 12px 24px rgba(131, 72, 102, .18);
+    opacity: 0;
+    animation: balloonRise 5.8s ease-in forwards;
+  }
+
+  .balloon-letter::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 2px;
+    height: clamp(18px, 4vw, 32px);
+    background: rgba(140, 102, 126, .55);
+    transform: translateX(-50%);
+  }
+
+  .balloon-letter span {
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,.16);
+  }
+
+  @keyframes balloonRise {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) translate3d(var(--from-x, 0px), 20px, 0) scale(.2);
+    }
+    12% {
+      opacity: 1;
+      transform: translateX(-50%) translate3d(calc(var(--from-x, 0px) * .25), -10px, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) translate3d(var(--drift-x, 0px), calc(-1 * (100vh + 180px)), 0) scale(1.08);
+    }
+  }
+
+  #startScreen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top, #fff7fb 0%, #ffe5f0 70%, #ffd7e8 100%);
+    z-index: 20;
+    cursor: pointer;
+    padding: 20px;
+    overflow: hidden;
+    transition: opacity .6s ease, visibility .6s ease;
+  }
+
+  #startScreen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .start-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 26px 28px 30px;
+    border-radius: 30px;
+    background: rgba(255,255,255,.52);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 16px 42px rgba(206, 91, 144, 0.18);
+    border: 2px solid rgba(255,255,255,0.6);
+    max-width: 560px;
+  }
+
+  .start-badge {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 48px;
+    background: radial-gradient(circle at 35% 30%, #fff8fd 0%, #ffd7e8 45%, #ffb5d0 100%);
+    border: 4px solid rgba(255,255,255,.7);
+    animation: floatCake 2.7s ease-in-out infinite;
+    box-shadow: 0 12px 24px rgba(128, 76, 97, 0.16);
+  }
+
+  .start-title {
+    text-align: center;
+    font-family: "Poiret One", "Quicksand", sans-serif;
+    font-size: clamp(34px, 5.2vw, 60px);
+    line-height: 1.02;
+    letter-spacing: 1.8px;
+    font-weight: 700;
+    color: #b33d75;
+  }
+
+  .start-sub {
+    font-size: clamp(14px, 2vw, 18px);
+    text-align: center;
+    color: #8b4e71;
+  }
+
+  .start-line {
+    width: min(280px, 58vw);
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #ff8db9, #ffca6d, #7ad8ff);
+  }
+
+  .confetti-piece {
+    position: absolute;
+    inset: auto;
+    width: 10px;
+    height: 20px;
+    border-radius: 4px;
+    opacity: .65;
+    animation: confettiBob 4s ease-in-out infinite;
+  }
+
+  .cp1 { top: 12%; left: 10%; background: #ff8db9; transform: rotate(25deg); }
+  .cp2 { top: 18%; right: 12%; background: #7ad8ff; transform: rotate(-18deg); animation-delay: -.9s; }
+  .cp3 { bottom: 15%; left: 12%; background: #ffd56e; transform: rotate(15deg); animation-delay: -.4s; }
+  .cp4 { bottom: 18%; right: 10%; background: #a98bff; transform: rotate(-25deg); animation-delay: -1.3s; }
+
+  @keyframes floatCake {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes confettiBob {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(12px) rotate(18deg); }
+  }
+
+
+  .final-card-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    z-index: 7;
+    opacity: 0;
+    transition: opacity .7s ease;
+  }
+
+  .final-card-overlay.show {
+    opacity: 1;
+  }
+
+  .final-card {
+    width: min(78vw, 440px);
+    padding: 22px 22px 18px;
+    border-radius: 28px;
+    text-align: center;
+    background: rgba(255,255,255,.78);
+    border: 2px solid rgba(255,255,255,.82);
+    box-shadow: 0 18px 40px rgba(164, 93, 128, .18);
+    backdrop-filter: blur(10px);
+    transform: translateY(18px) scale(.96);
+    transition: transform .7s ease;
+  }
+
+  .final-card-overlay.show .final-card {
+    transform: translateY(0) scale(1);
+  }
+
+  .final-card-heart {
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    background: radial-gradient(circle at 35% 30%, #fff8fd 0%, #ffd8e9 48%, #ffb6d1 100%);
+    box-shadow: 0 10px 22px rgba(206, 91, 144, 0.16);
+    animation: finalPulse 1.9s ease-in-out infinite;
+  }
+
+  .final-card-title {
+    font-family: "Poiret One", "Quicksand", sans-serif;
+    font-size: clamp(24px, 4.3vw, 38px);
+    line-height: 1.15;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: #b13f74;
+    margin-bottom: 10px;
+  }
+
+  .final-card-sub {
+    font-size: clamp(14px, 2.3vw, 18px);
+    line-height: 1.45;
+    color: #8f5c74;
+  }
+
+  @keyframes finalPulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+
+  @media (max-width: 640px) {
+    .text { min-height: 126px; margin-top: 18px; }
+    .controls { gap: 8px; }
+    .hint-pill, .action-btn { font-size: 13px; padding: 10px 14px; }
+  }
+</style>
+</head>
+<body>
+<div id="startScreen">
+  <div class="confetti-piece cp1"></div>
+  <div class="confetti-piece cp2"></div>
+  <div class="confetti-piece cp3"></div>
+  <div class="confetti-piece cp4"></div>
+
+  <div class="start-card">
+    <div class="start-badge">🎉</div>
+    <div class="start-title">🎂 Toca para celebrar 🎉</div>
+    <div class="start-line"></div>
+    
+  </div>
+</div>
+
+<div class="app">
+  <div class="text" id="message"></div>
+  <div class="controls">
+    <button class="action-btn" id="micBtn" type="button">🎤 Da click para activar micrófono</button>
+    <div class="hint-pill" id="blowHint">💨 Sopla fuerte unos instantes para apagar las velas ✨</div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+    <div class="balloon-overlay" id="balloonOverlay"></div>
+    <div class="final-card-overlay" id="finalCardOverlay">
+      <div class="final-card">
+        <div class="final-card-heart">💖</div>
+        <div class="final-card-title">Con mucho cariño para ti, Pao 💖</div>
+        <div class="final-card-sub">Espero que hayas sonreído al ver esto.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  message: `🎂 Hoy es un buen pretexto para recordarte lo especial que eres ✨
+
+Ojalá este nuevo año te traiga momentos que te hagan sonreír muchísimo, cosas bonitas que ni te esperas y muchas razones para sentirte orgullosa de todo lo que eres. 🎉
+
+Disfruta mucho tu día, te lo mereces, TE QUIERO MUCHO Pao. 💖`,
+  candleCount: 5,
+  micThreshold: 48,
+  blowFramesNeeded: 10,
+  flameOutStepMs: 260
+};
+
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const startScreen = document.getElementById('startScreen');
+const messageEl = document.getElementById('message');
+const micBtn = document.getElementById('micBtn');
+const blowHint = document.getElementById('blowHint');
+const balloonOverlay = document.getElementById('balloonOverlay');
+const finalCardOverlay = document.getElementById('finalCardOverlay');
+
+let animationId = null;
+let confetti = [];
+let started = false;
+let audioReady = false;
+let allCandlesOutAt = 0;
+let burstUntil = 0;
+let fireworks = [];
+let fireworksActive = false;
+let cakeVisible = true;
+let balloonsShown = false;
+let finalCardShown = false;
+
+let audioContext = null;
+let analyser = null;
+let micStream = null;
+let micSource = null;
+let volumeData = null;
+let blowCounter = 0;
+let micEnabled = false;
+let micPermissionDenied = false;
+
+const candles = Array.from({ length: CONFIG.candleCount }, (_, i) => ({
+  lit: true,
+  extinguishing: false,
+  glow: Math.random() * Math.PI * 2,
+  smokeSeed: Math.random() * 1000,
+  offAt: 0,
+  index: i
+}));
+
+function resizeCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  c.width = Math.floor(rect.width * ratio);
+  c.height = Math.floor(rect.height * ratio);
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+function typeText(text, el, speed = 24) {
+  el.textContent = '';
+  let i = 0;
+  function step() {
+    if (i <= text.length) {
+      el.textContent = text.slice(0, i);
+      i++;
+      setTimeout(step, speed);
+    }
+  }
+  step();
+}
+
+function updateMicButton(text, disabled = false) {
+  micBtn.textContent = text;
+  micBtn.disabled = disabled;
+}
+
+function showBlowHint() {
+  blowHint.classList.add('show');
+}
+
+function hideBlowHint() {
+  blowHint.classList.remove('show');
+}
+
+
+function showFinalCard() {
+  if (finalCardShown) return;
+  finalCardShown = true;
+  finalCardOverlay.classList.add('show');
+}
+
+function launchBalloonLetters() {
+  if (balloonsShown) return;
+  balloonsShown = true;
+  balloonOverlay.innerHTML = '';
+  const text = 'FELIZ CUMPLEAÑOS Pao';
+  const colors = ['#ff7fb0', '#7ad8ff', '#ffd56e', '#b89dff', '#7be3a9', '#ff9d76'];
+  const chars = Array.from(text);
+  const spacing = Math.min(28, Math.max(16, window.innerWidth / Math.max(chars.length + 2, 14)));
+  const totalWidth = spacing * (chars.length - 1);
+  const startOffset = -totalWidth / 2;
+
+  chars.forEach((ch, i) => {
+    if (ch === ' ') return;
+    const el = document.createElement('div');
+    el.className = 'balloon-letter';
+    el.style.left = `calc(50% + ${startOffset + i * spacing}px)`;
+    el.style.animationDelay = `${i * 0.16}s`;
+    el.style.background = `linear-gradient(180deg, ${colors[i % colors.length]}, ${colors[(i + 2) % colors.length]})`;
+    el.style.setProperty('--from-x', `${(Math.random() * 40 - 20).toFixed(1)}px`);
+    el.style.setProperty('--drift-x', `${(Math.random() * 180 - 90).toFixed(1)}px`);
+    el.innerHTML = `<span>${ch}</span>`;
+    balloonOverlay.appendChild(el);
+    setTimeout(() => el.remove(), 7200 + i * 180);
+  });
+}
+
+function randomFireworkColor() {
+  const colors = ['#ff6fae', '#7ad8ff', '#ffd56e', '#b89dff', '#7be3a9', '#ff9b6a'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+function launchFirework(x = Math.random() * c.clientWidth, y = 80 + Math.random() * Math.max(120, c.clientHeight * 0.45)) {
+  const particles = [];
+  const count = 28 + Math.floor(Math.random() * 18);
+  const baseColor = randomFireworkColor();
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.35;
+    const speed = 1.4 + Math.random() * 3.8;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 40 + Math.random() * 26,
+      maxLife: 40 + Math.random() * 26,
+      size: 2 + Math.random() * 3.5,
+      color: baseColor
+    });
+  }
+  fireworks.push({ particles });
+}
+
+function updateAndDrawFireworks() {
+  fireworks = fireworks.filter(fw => fw.particles.length > 0);
+  for (const fw of fireworks) {
+    fw.particles = fw.particles.filter(p => p.life > 0);
+    for (const p of fw.particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.025;
+      p.vx *= 0.992;
+      p.life -= 1;
+      const alpha = Math.max(0, p.life / p.maxLife);
+      ctx.beginPath();
+      ctx.fillStyle = `${p.color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
+      ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function initConfetti() {
+  const colors = ['#ff8db9', '#7ad8ff', '#ffd56e', '#b89dff', '#7be3a9'];
+  confetti = Array.from({ length: 90 }, () => ({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    size: 6 + Math.random() * 10,
+    speed: 0.8 + Math.random() * 2.2,
+    drift: -0.8 + Math.random() * 1.6,
+    rot: Math.random() * Math.PI,
+    rotSpeed: -0.05 + Math.random() * 0.10,
+    color: colors[Math.floor(Math.random() * colors.length)]
+  }));
+}
+
+function drawConfetti(time) {
+  const burstBoost = time < burstUntil ? 1.9 : 1;
+  for (const p of confetti) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size / 2, -p.size, p.size, p.size * 1.8);
+    ctx.restore();
+
+    p.y += p.speed * burstBoost;
+    p.x += p.drift * burstBoost;
+    p.rot += p.rotSpeed * burstBoost;
+
+    if (p.y > window.innerHeight + 24) {
+      p.y = -20;
+      p.x = Math.random() * window.innerWidth;
+    }
+    if (p.x < -30) p.x = window.innerWidth + 10;
+    if (p.x > window.innerWidth + 30) p.x = -10;
+  }
+}
+
+function candlePositions(scale) {
+  return {
+    xs: [-82, -38, 0, 42, 86].map(v => v * scale),
+    ys: [-40, -56, -72, -52, -38].map(v => v * scale)
+  };
+}
+
+function drawFlame(x, y, scale, t, strength = 1) {
+  const sway = Math.sin(t * 0.008 + x * 0.01) * 2.5 * strength;
+  const pulse = 1 + Math.sin(t * 0.014 + x * 0.02) * 0.08 * strength;
+  ctx.save();
+  ctx.translate(x + sway, y);
+  ctx.scale(scale * pulse, scale / pulse);
+
+  ctx.beginPath();
+  ctx.moveTo(0, -26);
+  ctx.bezierCurveTo(12, -10, 14, 12, 0, 22);
+  ctx.bezierCurveTo(-14, 12, -12, -10, 0, -26);
+  ctx.closePath();
+  ctx.fillStyle = '#ff9016';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(0, -16);
+  ctx.bezierCurveTo(7, -7, 8, 7, 0, 14);
+  ctx.bezierCurveTo(-8, 7, -7, -7, 0, -16);
+  ctx.closePath();
+  ctx.fillStyle = '#fff3a8';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawSmoke(x, y, scale, time, seed) {
+  for (let i = 0; i < 3; i++) {
+    const drift = Math.sin(time * 0.002 + seed + i) * 8 * scale;
+    const lift = ((time * 0.05 + i * 18 + seed * 10) % 70) * scale;
+    const alpha = Math.max(0, 0.22 - i * 0.05);
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(160, 150, 170, ${alpha})`;
+    ctx.ellipse(x + drift, y - lift, (10 - i * 2) * scale, (6 - i) * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawCake(x, y, scale, time) {
+  const sway = Math.sin(time * 0.0025) * 3;
+  const cx = x;
+  const cy = y + sway;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  const plateW = 360 * scale;
+  const plateH = 42 * scale;
+  const cakeW = 280 * scale;
+  const cakeH = 138 * scale;
+  const cakeTopY = -18 * scale;
+  const bodyTopY = cakeTopY + 12 * scale;
+  const bodyBottomY = bodyTopY + cakeH;
+
+  ctx.shadowColor = 'rgba(107, 56, 86, 0.14)';
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = '#b8e8ff';
+  ctx.beginPath();
+  ctx.ellipse(0, bodyBottomY + 24 * scale, plateW / 2, plateH / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#fff6f9';
+  ctx.beginPath();
+  ctx.ellipse(0, bodyBottomY + 18 * scale, plateW / 2.15, plateH / 2.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 3 * scale;
+  ctx.strokeStyle = 'rgba(116, 84, 96, 0.28)';
+  ctx.stroke();
+
+  ctx.fillStyle = '#f7c7d6';
+  ctx.beginPath();
+  ctx.ellipse(0, cakeTopY, cakeW / 2, 34 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const bodyGrad = ctx.createLinearGradient(0, bodyTopY, 0, bodyBottomY);
+  bodyGrad.addColorStop(0, '#ffd8e5');
+  bodyGrad.addColorStop(0.45, '#ffe8f0');
+  bodyGrad.addColorStop(0.46, '#9a6072');
+  bodyGrad.addColorStop(0.49, '#f9d6e2');
+  bodyGrad.addColorStop(0.78, '#ffe8f0');
+  bodyGrad.addColorStop(0.79, '#9a6072');
+  bodyGrad.addColorStop(0.82, '#f8d3e0');
+  bodyGrad.addColorStop(1, '#ffd0de');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.moveTo(-cakeW / 2, bodyTopY);
+  ctx.quadraticCurveTo(-cakeW / 2 - 8 * scale, bodyTopY + cakeH * 0.52, -cakeW / 2 + 16 * scale, bodyBottomY);
+  ctx.lineTo(cakeW / 2 - 16 * scale, bodyBottomY);
+  ctx.quadraticCurveTo(cakeW / 2 + 8 * scale, bodyTopY + cakeH * 0.52, cakeW / 2, bodyTopY);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.lineWidth = 2 * scale;
+  ctx.strokeStyle = 'rgba(103, 63, 79, 0.28)';
+  ctx.stroke();
+
+  ctx.fillStyle = '#f8b7ca';
+  ctx.beginPath();
+  ctx.ellipse(0, cakeTopY - 2 * scale, cakeW / 2, 30 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#f39abc';
+  ctx.beginPath();
+  ctx.moveTo(-cakeW / 2 + 10 * scale, cakeTopY - 4 * scale);
+  ctx.bezierCurveTo(-cakeW * 0.28, -48 * scale, cakeW * 0.28, -48 * scale, cakeW / 2 - 10 * scale, cakeTopY - 4 * scale);
+  ctx.lineTo(cakeW / 2 - 10 * scale, cakeTopY + 20 * scale);
+
+  const drips = [
+    [0.82, 18], [0.62, 32], [0.38, 22], [0.12, 34], [-0.12, 24], [-0.38, 36], [-0.62, 22], [-0.82, 28]
+  ];
+  for (const [pct, len] of drips) {
+    const px = (cakeW / 2) * pct;
+    ctx.bezierCurveTo(px + 14 * scale, cakeTopY + 14 * scale, px + 12 * scale, cakeTopY + len * scale, px, cakeTopY + len * scale);
+    ctx.bezierCurveTo(px - 12 * scale, cakeTopY + len * scale, px - 14 * scale, cakeTopY + 14 * scale, px - 18 * scale, cakeTopY + 20 * scale);
+  }
+
+  ctx.lineTo(-cakeW / 2 + 10 * scale, cakeTopY + 20 * scale);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.lineWidth = 2 * scale;
+  ctx.strokeStyle = 'rgba(140, 78, 104, 0.35)';
+  ctx.stroke();
+
+  ctx.strokeStyle = '#9a6072';
+  ctx.lineWidth = 3 * scale;
+  ctx.beginPath();
+  ctx.moveTo(-cakeW / 2 + 14 * scale, bodyTopY + cakeH * 0.48);
+  ctx.quadraticCurveTo(0, bodyTopY + cakeH * 0.43, cakeW / 2 - 14 * scale, bodyTopY + cakeH * 0.48);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(-cakeW / 2 + 18 * scale, bodyTopY + cakeH * 0.8);
+  ctx.quadraticCurveTo(0, bodyTopY + cakeH * 0.76, cakeW / 2 - 18 * scale, bodyTopY + cakeH * 0.8);
+  ctx.stroke();
+
+  const { xs: candleXs, ys: candleYs } = candlePositions(scale);
+
+  candleXs.forEach((cx2, i) => {
+    const cy2 = candleYs[i] - 8 * scale;
+    const candle = candles[i];
+
+    ctx.fillStyle = '#cf82ca';
+    ctx.beginPath();
+    ctx.roundRect(cx2 - 10 * scale, cy2 - 2 * scale, 20 * scale, 52 * scale, 10 * scale);
+    ctx.fill();
+    ctx.strokeStyle = '#8a4b87';
+    ctx.lineWidth = 2 * scale;
+    ctx.stroke();
+
+    ctx.strokeStyle = '#fff2a6';
+    ctx.beginPath();
+    ctx.moveTo(cx2, cy2 - 2 * scale);
+    ctx.lineTo(cx2, cy2 - 14 * scale);
+    ctx.stroke();
+
+    if (candle.lit) {
+      drawFlame(cx2, cy2 - 24 * scale, 0.72 * scale, time, 1);
+    } else {
+      drawSmoke(cx2, cy2 - 14 * scale, scale * 0.9, time, candle.smokeSeed);
+    }
+  });
+
+  const sprinkles = [
+    [-70, -12, '#7ad8ff'], [-40, -4, '#ffd56e'], [-12, -16, '#ff7faa'],
+    [24, -8, '#7be3a9'], [54, -18, '#b89dff'], [82, -4, '#ffd56e']
+  ];
+  sprinkles.forEach(([sx, sy, color]) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4 * scale;
+    ctx.beginPath();
+    ctx.moveTo(sx * scale - 5 * scale, sy * scale);
+    ctx.lineTo(sx * scale + 5 * scale, sy * scale + 2 * scale);
+    ctx.stroke();
+  });
+
+  ctx.restore();
+}
+
+function drawCakeScene(time) {
+  const w = c.clientWidth;
+  const h = c.clientHeight;
+  ctx.clearRect(0, 0, w, h);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, h);
+  bg.addColorStop(0, 'rgba(255, 245, 249, 0)');
+  bg.addColorStop(1, 'rgba(255, 224, 237, 0.5)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+
+  drawConfetti(time);
+
+  if (cakeVisible) {
+    const scale = Math.min(w / 520, h / 420, 1.05);
+    drawCake(w / 2, h * 0.54, scale, time);
+  }
+
+  if (fireworksActive) {
+    if (Math.random() < 0.09) launchFirework();
+    updateAndDrawFireworks();
+  }
+}
+
+function getVolumeLevel() {
+  if (!analyser || !volumeData) return 0;
+  analyser.getByteFrequencyData(volumeData);
+  let sum = 0;
+  for (let i = 0; i < volumeData.length; i++) sum += volumeData[i];
+  return sum / volumeData.length;
+}
+
+function extinguishNextCandle() {
+  const next = candles.find(c => c.lit);
+  if (!next) return false;
+  next.lit = false;
+  next.offAt = performance.now();
+  if (candles.every(c => !c.lit)) {
+    allCandlesOutAt = performance.now();
+    burstUntil = performance.now() + 1600;
+    fireworksActive = true;
+    cakeVisible = false;
+    for (let i = 0; i < 6; i++) launchFirework();
+    hideBlowHint();
+    launchBalloonLetters();
+    setTimeout(showFinalCard, 5600);
+    updateMicButton('🎉 Deseo cumplido', true);
+    try {
+      bgMusic.pause();
+      bgMusic.currentTime = 0;
+    } catch (e) {}
+    try {
+      mananitasMusic.currentTime = 0;
+      const playPromise = mananitasMusic.play();
+      if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+    } catch (e) {}
+    stopMic();
+  }
+  return true;
+}
+
+function checkBlow() {
+  if (!micEnabled) return;
+  const level = getVolumeLevel();
+  if (level > CONFIG.micThreshold) {
+    blowCounter += 1;
+  } else {
+    blowCounter = Math.max(0, blowCounter - 1);
+  }
+
+  if (blowCounter >= CONFIG.blowFramesNeeded) {
+    blowCounter = 0;
+    const turnedOff = extinguishNextCandle();
+  }
+}
+
+function animate(time) {
+  checkBlow();
+  drawCakeScene(time);
+  animationId = requestAnimationFrame(animate);
+}
+
+async function enableMic() {
+  if (micEnabled) return;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Micrófono no compatible');
+    }
+
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    });
+
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioContext.state === 'suspended') await audioContext.resume();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.35;
+    volumeData = new Uint8Array(analyser.frequencyBinCount);
+    micSource = audioContext.createMediaStreamSource(micStream);
+    micSource.connect(analyser);
+
+    micEnabled = true;
+    audioReady = true;
+    showBlowHint();
+    updateMicButton('🎤 Micrófono activado', true);
+  } catch (err) {
+    micPermissionDenied = true;
+    updateMicButton('⚠️ Permite el micrófono para continuar', false);
+  }
+}
+
+function stopMic() {
+  micEnabled = false;
+  if (micSource) {
+    try { micSource.disconnect(); } catch (e) {}
+    micSource = null;
+  }
+  if (micStream) {
+    micStream.getTracks().forEach(track => track.stop());
+    micStream = null;
+  }
+  if (audioContext) {
+    try { audioContext.close(); } catch (e) {}
+    audioContext = null;
+  }
+  analyser = null;
+  volumeData = null;
+}
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  initConfetti();
+});
+
+const bgMusic = new Audio('cumpleanos.mp3');
+bgMusic.loop = true;
+bgMusic.preload = 'auto';
+
+const mananitasMusic = new Audio('mananitas.mp3');
+mananitasMusic.loop = false;
+mananitasMusic.preload = 'auto';
+
+startScreen.addEventListener('click', async () => {
+  if (started) return;
+  started = true;
+  typeText(CONFIG.message, messageEl);
+  resizeCanvas();
+  initConfetti();
+  animate(performance.now());
+  startScreen.classList.add('hidden');
+  try { await bgMusic.play(); } catch (e) {}
+});
+
+micBtn.addEventListener('click', async () => {
+  await enableMic();
+});
+
+window.addEventListener('beforeunload', stopMic);
+resizeCanvas();
+</script>
+</body>
+</html>
